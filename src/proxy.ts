@@ -1,7 +1,7 @@
 import { auth } from '@/auth'
 import { NextResponse } from 'next/server'
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const path = req.nextUrl.pathname
   const isLoginPage = path === '/admin/login'
   const isAuthenticated = !!req.auth

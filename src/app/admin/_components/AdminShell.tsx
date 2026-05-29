@@ -26,18 +26,13 @@ export default function AdminShell({ user, children }: Props) {
     })
   }
 
+  const ml = !mounted ? 'md:ml-64' : collapsed ? 'md:ml-16' : 'md:ml-64'
+
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
+    <div className="min-h-screen bg-zinc-950">
       <AdminSidebar user={user} collapsed={collapsed} onToggle={toggle} />
 
-      {/* Spacer that matches sidebar width — prevents content flash before mount */}
-      <div
-        className={`hidden md:block shrink-0 transition-all duration-300 ${
-          !mounted ? 'w-64' : collapsed ? 'w-16' : 'w-64'
-        }`}
-      />
-
-      <main className="flex-1 min-w-0 min-h-screen">
+      <main className={`min-h-screen transition-all duration-300 ${ml}`}>
         <div className="md:hidden h-14" />
         <div className="p-4 md:p-8">{children}</div>
       </main>

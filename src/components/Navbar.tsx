@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 const navLinks = [
   { label: 'About', href: '#about' },
@@ -13,6 +14,13 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const isHome = pathname === '/'
+
+  function resolveHref(href: string) {
+    if (href.startsWith('#') && !isHome) return `/${href}`
+    return href
+  }
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -27,7 +35,7 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="#" className="text-green-400 font-mono font-bold text-lg tracking-tight">
+        <a href="/" className="text-green-400 font-mono font-bold text-lg tracking-tight">
           PM.
         </a>
 
@@ -35,7 +43,7 @@ export default function Navbar() {
           {navLinks.map((link, i) => (
             <a
               key={link.label}
-              href={link.href}
+              href={resolveHref(link.href)}
               className="text-zinc-400 hover:text-green-400 text-sm font-mono transition-colors"
             >
               <span className="text-green-400 mr-1">0{i + 1}.</span>
@@ -74,7 +82,7 @@ export default function Navbar() {
           {navLinks.map((link) => (
             <a
               key={link.label}
-              href={link.href}
+              href={resolveHref(link.href)}
               className="block py-3 text-zinc-400 hover:text-green-400 font-mono text-sm transition-colors"
               onClick={() => setMenuOpen(false)}
             >
