@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       },
     })
-    revalidateTag(TAGS.projects); revalidateTag(TAGS.stats)
+    revalidateTag(TAGS.projects, 'max'); revalidateTag(TAGS.stats, 'max')
     return NextResponse.json(project, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Database unavailable. Add your MongoDB connection string to .env.local' }, { status: 503 })

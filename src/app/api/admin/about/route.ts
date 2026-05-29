@@ -22,7 +22,6 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const about = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
-  revalidateTag(TAGS.about); revalidateTag(TAGS.stats)
   return NextResponse.json(about)
 }
 
@@ -43,6 +42,6 @@ export async function PUT(req: NextRequest) {
     ? await prisma.about.update({ where: { id: existing.id }, data })
     : await prisma.about.create({ data })
 
-  revalidateTag(TAGS.about); revalidateTag(TAGS.stats)
+  revalidateTag(TAGS.about, 'max'); revalidateTag(TAGS.stats, 'max')
   return NextResponse.json(about)
 }

@@ -26,7 +26,6 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const { id } = await params
     const post = await prisma.blogPost.findUnique({ where: { id } })
     if (!post) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    revalidateTag(TAGS.blog); revalidateTag(TAGS.stats)
     return NextResponse.json(post)
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
@@ -56,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(status === 'published' && !existing?.publishedAt && { publishedAt: new Date() }),
       },
     })
-    revalidateTag(TAGS.blog); revalidateTag(TAGS.stats)
+    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
     return NextResponse.json(post)
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
@@ -70,7 +69,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params
     await prisma.blogPost.delete({ where: { id } })
-    revalidateTag(TAGS.blog); revalidateTag(TAGS.stats)
+    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })

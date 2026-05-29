@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const experience = await prisma.experience.create({
       data: { ...rest, scheduledAt: scheduledAt ? new Date(scheduledAt) : null },
     })
-    revalidateTag(TAGS.experiences); revalidateTag(TAGS.stats)
+    revalidateTag(TAGS.experiences, 'max'); revalidateTag(TAGS.stats, 'max')
     return NextResponse.json(experience, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Database unavailable. Add your MongoDB connection string to .env.local' }, { status: 503 })

@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         publishedAt: rest.status === 'published' ? new Date() : null,
       },
     })
-    revalidateTag(TAGS.blog); revalidateTag(TAGS.stats)
+    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
     return NextResponse.json(post, { status: 201 })
   } catch (e: unknown) {
     const msg = e instanceof Error && e.message.includes('slug') ? 'A post with this slug already exists.' : 'Database unavailable.'
