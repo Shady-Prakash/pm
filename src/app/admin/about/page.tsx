@@ -1,13 +1,11 @@
-import { prisma } from '@/lib/prisma'
 import type { Skill } from '@/types'
 import AboutForm from './_components/AboutForm'
 import { skills as staticSkills } from '@/data/portfolio'
+import { getAdminAbout } from '@/lib/admin-queries'
 
 export default async function AdminAboutPage() {
   let about = null
-  try {
-    about = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
-  } catch {}
+  try { about = await getAdminAbout() } catch {}
 
   return (
     <div>
@@ -19,9 +17,7 @@ export default async function AdminAboutPage() {
                 bio: about.bio,
                 skills: about.skills as unknown as Skill[],
                 status: about.status as 'draft' | 'published' | 'scheduled',
-                scheduledAt: about.scheduledAt
-                  ? new Date(about.scheduledAt).toISOString().slice(0, 16)
-                  : '',
+                scheduledAt: about.scheduledAt ? new Date(about.scheduledAt).toISOString().slice(0, 16) : '',
               }
             : {
                 bio: [

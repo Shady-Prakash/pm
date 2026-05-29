@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { TAGS } from '@/lib/admin-queries'
 
 const schema = z.object({
   title: z.string().min(1),
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       },
     })
+    revalidateTag(TAGS.projects); revalidateTag(TAGS.stats)
     return NextResponse.json(project, { status: 201 })
   } catch {
     return NextResponse.json({ error: 'Database unavailable. Add your MongoDB connection string to .env.local' }, { status: 503 })

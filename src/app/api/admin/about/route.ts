@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { TAGS } from '@/lib/admin-queries'
 
 const skillSchema = z.object({
   category: z.string().min(1),
@@ -20,6 +22,7 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const about = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
+  revalidateTag(TAGS.about); revalidateTag(TAGS.stats)
   return NextResponse.json(about)
 }
 
@@ -40,5 +43,6 @@ export async function PUT(req: NextRequest) {
     ? await prisma.about.update({ where: { id: existing.id }, data })
     : await prisma.about.create({ data })
 
+  revalidateTag(TAGS.about); revalidateTag(TAGS.stats)
   return NextResponse.json(about)
 }

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { auth } from '@/auth'
+import { revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { TAGS } from '@/lib/admin-queries'
 
 const schema = z.object({
   title: z.string().min(1),
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
         publishedAt: rest.status === 'published' ? new Date() : null,
       },
     })
+    revalidateTag(TAGS.blog); revalidateTag(TAGS.stats)
     return NextResponse.json(post, { status: 201 })
   } catch (e: unknown) {
     const msg = e instanceof Error && e.message.includes('slug') ? 'A post with this slug already exists.' : 'Database unavailable.'

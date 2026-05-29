@@ -1,73 +1,40 @@
-import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import StatusBadge from '../_components/StatusBadge'
 import ExperienceActions from './_components/ExperienceActions'
 import SearchSortBar from '../_components/SearchSortBar'
 import Pagination from '../_components/Pagination'
-
-const PAGE_SIZE = 5
+import TableSkeleton from '../_components/TableSkeleton'
+import { getAdminExperiences, PAGE_SIZE } from '@/lib/admin-queries'
 
 const SORT_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
+  { value: 'newest',      label: 'Newest first'  },
+  { value: 'oldest',      label: 'Oldest first'  },
   { value: 'company_asc', label: 'Company A → Z' },
-  { value: 'role_asc', label: 'Role A → Z' },
-  { value: 'status', label: 'By status' },
+  { value: 'role_asc',    label: 'Role A → Z'    },
+  { value: 'status',      label: 'By status'     },
 ]
 
 type SearchParams = Promise<{ q?: string; sort?: string; page?: string }>
 
-function buildOrderBy(sort: string) {
-  switch (sort) {
-    case 'oldest':      return { createdAt: 'asc' as const }
-    case 'company_asc': return { company: 'asc' as const }
-    case 'role_asc':    return { role: 'asc' as const }
-    case 'status':      return { status: 'asc' as const }
-    default:            return { createdAt: 'desc' as const }
-  }
-}
-
-export default async function AdminExperiencePage({ searchParams }: { searchParams: SearchParams }) {
+async function ExperienceTable({ searchParams }: { searchParams: SearchParams }) {
   const { q = '', sort = 'newest', page: pageStr = '1' } = await searchParams
   const page = Math.max(1, parseInt(pageStr) || 1)
 
-  const where = q
-    ? { OR: [{ company: { contains: q, mode: 'insensitive' as const } }, { role: { contains: q, mode: 'insensitive' as const } }] }
-    : {}
-  const orderBy = buildOrderBy(sort)
-
-  let experiences: Awaited<ReturnType<typeof prisma.experience.findMany>> = []
+  let rows: Awaited<ReturnType<typeof getAdminExperiences>>['rows'] = []
   let total = 0
-
   try {
-    ;[experiences, total] = await Promise.all([
-      prisma.experience.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-      prisma.experience.count({ where }),
-    ])
+    ;({ rows, total } = await getAdminExperiences(q, sort, page))
   } catch {}
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold text-zinc-100">Experience</h1>
-          <p className="text-zinc-500 text-sm mt-1">{total} total</p>
-        </div>
-        <Link href="/admin/experience/new" className="px-3 md:px-4 py-2 bg-green-400 text-zinc-950 font-semibold text-sm rounded-lg hover:bg-green-300 transition-colors font-mono">
-          + New
-        </Link>
-      </div>
-
+    <>
       <div className="mb-5">
-        <Suspense>
-          <SearchSortBar sortOptions={SORT_OPTIONS} placeholder="Search company or role…" />
-        </Suspense>
+        <Suspense><SearchSortBar sortOptions={SORT_OPTIONS} placeholder="Search company or role…" /></Suspense>
       </div>
-
-      {experiences.length === 0 ? (
+      {rows.length === 0 ? (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-12 text-center">
           <p className="text-zinc-500 mb-4">{q ? `No results for "${q}"` : 'No experience entries yet.'}</p>
           {!q && <Link href="/admin/experience/new" className="text-green-400 text-sm font-mono hover:underline">Add your first role →</Link>}
@@ -86,7 +53,7 @@ export default async function AdminExperiencePage({ searchParams }: { searchPara
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                {experiences.map((exp) => (
+                {rows.map((exp) => (
                   <tr key={exp.id} className="hover:bg-zinc-800/50 transition-colors">
                     <td className="px-6 py-4 text-zinc-100 text-sm font-medium whitespace-nowrap">{exp.role}</td>
                     <td className="px-6 py-4 text-zinc-400 text-sm whitespace-nowrap">{exp.company}</td>
@@ -98,12 +65,27 @@ export default async function AdminExperiencePage({ searchParams }: { searchPara
               </tbody>
             </table>
           </div>
-
           <Suspense>
             <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
           </Suspense>
         </>
       )}
+    </>
+  )
+}
+
+export default function AdminExperiencePage({ searchParams }: { searchParams: SearchParams }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-zinc-100">Experience</h1>
+        <Link href="/admin/experience/new" className="px-3 md:px-4 py-2 bg-green-400 text-zinc-950 font-semibold text-sm rounded-lg hover:bg-green-300 transition-colors font-mono">
+          + New
+        </Link>
+      </div>
+      <Suspense fallback={<TableSkeleton />}>
+        <ExperienceTable searchParams={searchParams} />
+      </Suspense>
     </div>
   )
 }
