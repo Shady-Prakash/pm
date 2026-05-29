@@ -5,33 +5,50 @@ import { Suspense } from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import BlogPagination from '@/components/BlogPagination'
+import BlogFilters from '@/components/BlogFilters'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 6
 
-function isVisible(item: { status: string; scheduledAt: Date | null }) {
-  if (item.status === 'published') return true
-  if (item.status === 'scheduled' && item.scheduledAt && new Date() >= item.scheduledAt) return true
-  return false
-}
-
-type SearchParams = Promise<{ page?: string }>
+type SearchParams = Promise<{ page?: string; q?: string; tag?: string }>
 
 export default async function BlogPage({ searchParams }: { searchParams: SearchParams }) {
-  const { page: pageStr = '1' } = await searchParams
+  const { page: pageStr = '1', q = '', tag = '' } = await searchParams
   const page = Math.max(1, parseInt(pageStr) || 1)
 
   let posts: Awaited<ReturnType<typeof prisma.blogPost.findMany>> = []
   let total = 0
+  let allTags: string[] = []
 
   try {
-    const where = {
+    const visibilityFilter = {
       OR: [
         { status: 'published' },
         { status: 'scheduled', scheduledAt: { lte: new Date() } },
       ],
     }
+
+    // Collect all tags from visible posts for the filter UI
+    const tagRows = await prisma.blogPost.findMany({
+      where: visibilityFilter,
+      select: { tags: true },
+    })
+    allTags = [...new Set(tagRows.flatMap((r) => r.tags))].sort()
+
+    // Build filtered query
+    const filters: object[] = [visibilityFilter]
+    if (q) {
+      filters.push({
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { excerpt: { contains: q, mode: 'insensitive' } },
+        ],
+      })
+    }
+    if (tag) filters.push({ tags: { has: tag } })
+    const where = { AND: filters }
+
     ;[posts, total] = await Promise.all([
       prisma.blogPost.findMany({
         where,
@@ -46,9 +63,9 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-6 pt-32 pb-20">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-6 pt-32 pb-20">
         <div className="mb-14">
           <p className="font-mono text-green-400 text-sm mb-2">writing</p>
           <h1 className="text-4xl md:text-5xl font-bold text-zinc-100">Blog & Articles</h1>
@@ -59,9 +76,20 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
           </p>
         </div>
 
+        <Suspense>
+          <BlogFilters allTags={allTags} q={q} activeTag={tag} />
+        </Suspense>
+
         {posts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-zinc-600 font-mono">No posts yet — check back soon.</p>
+            <p className="text-zinc-600 font-mono">
+              {q || tag ? 'No articles match your filters.' : 'No posts yet — check back soon.'}
+            </p>
+            {(q || tag) && (
+              <a href="/blog" className="mt-4 inline-block text-green-400 font-mono text-sm hover:underline">
+                Clear filters
+              </a>
+            )}
           </div>
         ) : (
           <>
@@ -120,6 +148,6 @@ export default async function BlogPage({ searchParams }: { searchParams: SearchP
         )}
       </main>
       <Footer />
-    </>
+    </div>
   )
 }

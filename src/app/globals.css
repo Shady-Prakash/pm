@@ -26,6 +26,10 @@ html {
   color: #4ade80;
 }
 
+/* Hide scrollbar but keep scroll behaviour */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* VSCode-style code blocks (shiki) */
 .code-block {
   border-radius: 0.5rem;

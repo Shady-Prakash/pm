@@ -14,6 +14,7 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState('')
   const pathname = usePathname()
   const isHome = pathname === '/'
 
@@ -22,11 +23,47 @@ export default function Navbar() {
     return href
   }
 
+  function isActive(href: string) {
+    if (href.startsWith('/')) return pathname.startsWith(href)
+    if (href.startsWith('#') && isHome) return activeSection === href.slice(1)
+    return false
+  }
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    if (!isHome) return
+    const ids = ['about', 'projects', 'experience', 'contact']
+
+    function onScroll() {
+      const scrollY = window.scrollY
+      const windowHeight = window.innerHeight
+      const docHeight = document.documentElement.scrollHeight
+
+      // If scrolled to near the bottom, always activate the last section
+      if (scrollY + windowHeight >= docHeight - 80) {
+        setActiveSection('contact')
+        return
+      }
+
+      // Activate the last section whose top has crossed 40% down the viewport
+      const threshold = windowHeight * 0.4
+      let active = ''
+      for (const id of ids) {
+        const el = document.getElementById(id)
+        if (el && el.getBoundingClientRect().top <= threshold) active = id
+      }
+      setActiveSection(active)
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [isHome])
 
   return (
     <nav
@@ -44,7 +81,9 @@ export default function Navbar() {
             <a
               key={link.label}
               href={resolveHref(link.href)}
-              className="text-zinc-400 hover:text-green-400 text-sm font-mono transition-colors"
+              className={`text-sm font-mono transition-colors ${
+                isActive(link.href) ? 'text-green-400' : 'text-zinc-400 hover:text-green-400'
+              }`}
             >
               <span className="text-green-400 mr-1">0{i + 1}.</span>
               {link.label}
@@ -83,7 +122,9 @@ export default function Navbar() {
             <a
               key={link.label}
               href={resolveHref(link.href)}
-              className="block py-3 text-zinc-400 hover:text-green-400 font-mono text-sm transition-colors"
+              className={`block py-3 font-mono text-sm transition-colors ${
+                isActive(link.href) ? 'text-green-400' : 'text-zinc-400 hover:text-green-400'
+              }`}
               onClick={() => setMenuOpen(false)}
             >
               {link.label}
