@@ -1,7 +1,5 @@
 import { prisma } from './prisma'
 
-export const PAGE_SIZE = 5
-
 export const TAGS = {
   stats:       'admin-stats',
   projects:    'admin-projects',
@@ -44,35 +42,26 @@ function blogOrder(sort: string) {
 
 // ─── direct queries (no cache — admin always needs fresh data) ────────────────
 
-export async function getAdminProjects(q = '', sort = 'newest', page = 1) {
+export async function getAdminProjects(q = '', sort = 'newest') {
   const where = q ? { title: { contains: q, mode: 'insensitive' as const } } : {}
-  const [rows, total] = await Promise.all([
-    prisma.project.findMany({ where, orderBy: projectsOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-    prisma.project.count({ where }),
-  ])
-  return { rows, total }
+  const rows = await prisma.project.findMany({ where, orderBy: projectsOrder(sort) })
+  return { rows, total: rows.length }
 }
 
-export async function getAdminExperiences(q = '', sort = 'newest', page = 1) {
+export async function getAdminExperiences(q = '', sort = 'newest') {
   const where = q
     ? { OR: [{ company: { contains: q, mode: 'insensitive' as const } }, { role: { contains: q, mode: 'insensitive' as const } }] }
     : {}
-  const [rows, total] = await Promise.all([
-    prisma.experience.findMany({ where, orderBy: experiencesOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-    prisma.experience.count({ where }),
-  ])
-  return { rows, total }
+  const rows = await prisma.experience.findMany({ where, orderBy: experiencesOrder(sort) })
+  return { rows, total: rows.length }
 }
 
-export async function getAdminBlog(q = '', sort = 'newest', page = 1) {
+export async function getAdminBlog(q = '', sort = 'newest') {
   const where = q
     ? { OR: [{ title: { contains: q, mode: 'insensitive' as const } }, { tags: { has: q.toLowerCase() } }] }
     : {}
-  const [rows, total] = await Promise.all([
-    prisma.blogPost.findMany({ where, orderBy: blogOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-    prisma.blogPost.count({ where }),
-  ])
-  return { rows, total }
+  const rows = await prisma.blogPost.findMany({ where, orderBy: blogOrder(sort) })
+  return { rows, total: rows.length }
 }
 
 export async function getAdminAbout() {

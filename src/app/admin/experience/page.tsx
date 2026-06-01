@@ -3,9 +3,8 @@ import { Suspense } from 'react'
 import StatusBadge from '../_components/StatusBadge'
 import ExperienceActions from './_components/ExperienceActions'
 import SearchSortBar from '../_components/SearchSortBar'
-import Pagination from '../_components/Pagination'
 import TableSkeleton from '../_components/TableSkeleton'
-import { getAdminExperiences, PAGE_SIZE } from '@/lib/admin-queries'
+import { getAdminExperiences } from '@/lib/admin-queries'
 
 const SORT_OPTIONS = [
   { value: 'newest',      label: 'Newest first'  },
@@ -15,19 +14,15 @@ const SORT_OPTIONS = [
   { value: 'status',      label: 'By status'     },
 ]
 
-type SearchParams = Promise<{ q?: string; sort?: string; page?: string }>
+type SearchParams = Promise<{ q?: string; sort?: string }>
 
 async function ExperienceTable({ searchParams }: { searchParams: SearchParams }) {
-  const { q = '', sort = 'newest', page: pageStr = '1' } = await searchParams
-  const page = Math.max(1, parseInt(pageStr) || 1)
+  const { q = '', sort = 'newest' } = await searchParams
 
   let rows: Awaited<ReturnType<typeof getAdminExperiences>>['rows'] = []
-  let total = 0
   try {
-    ;({ rows, total } = await getAdminExperiences(q, sort, page))
+    ;({ rows } = await getAdminExperiences(q, sort))
   } catch {}
-
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <>
@@ -40,35 +35,30 @@ async function ExperienceTable({ searchParams }: { searchParams: SearchParams })
           {!q && <Link href="/admin/experience/new" className="text-green-400 text-sm font-mono hover:underline">Add your first role →</Link>}
         </div>
       ) : (
-        <>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto">
-            <table className="w-full min-w-[560px]">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Role</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Company</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Period</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Status</th>
-                  <th className="px-6 py-3" />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[560px]">
+            <thead>
+              <tr className="border-b border-zinc-800">
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Role</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Company</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Period</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Status</th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {rows.map((exp) => (
+                <tr key={exp.id} className="hover:bg-zinc-800/50 transition-colors">
+                  <td className="px-6 py-4 text-zinc-100 text-sm font-medium whitespace-nowrap">{exp.role}</td>
+                  <td className="px-6 py-4 text-zinc-400 text-sm whitespace-nowrap">{exp.company}</td>
+                  <td className="px-6 py-4 text-zinc-500 text-xs font-mono whitespace-nowrap">{exp.period}</td>
+                  <td className="px-6 py-4"><StatusBadge status={exp.status} /></td>
+                  <td className="px-6 py-4"><ExperienceActions id={exp.id} status={exp.status} /></td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800">
-                {rows.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-6 py-4 text-zinc-100 text-sm font-medium whitespace-nowrap">{exp.role}</td>
-                    <td className="px-6 py-4 text-zinc-400 text-sm whitespace-nowrap">{exp.company}</td>
-                    <td className="px-6 py-4 text-zinc-500 text-xs font-mono whitespace-nowrap">{exp.period}</td>
-                    <td className="px-6 py-4"><StatusBadge status={exp.status} /></td>
-                    <td className="px-6 py-4"><ExperienceActions id={exp.id} status={exp.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Suspense>
-            <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
-          </Suspense>
-        </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

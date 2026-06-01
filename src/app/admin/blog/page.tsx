@@ -3,9 +3,8 @@ import { Suspense } from 'react'
 import StatusBadge from '../_components/StatusBadge'
 import BlogActions from './_components/BlogActions'
 import SearchSortBar from '../_components/SearchSortBar'
-import Pagination from '../_components/Pagination'
 import TableSkeleton from '../_components/TableSkeleton'
-import { getAdminBlog, PAGE_SIZE } from '@/lib/admin-queries'
+import { getAdminBlog } from '@/lib/admin-queries'
 
 const SORT_OPTIONS = [
   { value: 'newest',     label: 'Newest first' },
@@ -15,19 +14,15 @@ const SORT_OPTIONS = [
   { value: 'status',     label: 'By status'    },
 ]
 
-type SearchParams = Promise<{ q?: string; sort?: string; page?: string }>
+type SearchParams = Promise<{ q?: string; sort?: string }>
 
 async function BlogTable({ searchParams }: { searchParams: SearchParams }) {
-  const { q = '', sort = 'newest', page: pageStr = '1' } = await searchParams
-  const page = Math.max(1, parseInt(pageStr) || 1)
+  const { q = '', sort = 'newest' } = await searchParams
 
   let rows: Awaited<ReturnType<typeof getAdminBlog>>['rows'] = []
-  let total = 0
   try {
-    ;({ rows, total } = await getAdminBlog(q, sort, page))
+    ;({ rows } = await getAdminBlog(q, sort))
   } catch {}
-
-  const totalPages = Math.ceil(total / PAGE_SIZE)
 
   return (
     <>
@@ -40,45 +35,40 @@ async function BlogTable({ searchParams }: { searchParams: SearchParams }) {
           {!q && <Link href="/admin/blog/new" className="text-green-400 text-sm font-mono hover:underline">Write your first article →</Link>}
         </div>
       ) : (
-        <>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto">
-            <table className="w-full min-w-[640px]">
-              <thead>
-                <tr className="border-b border-zinc-800">
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Title</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Tags</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Status</th>
-                  <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Date</th>
-                  <th className="px-6 py-3" />
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[640px]">
+            <thead>
+              <tr className="border-b border-zinc-800">
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Title</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Tags</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Status</th>
+                <th className="text-left px-6 py-3 text-zinc-500 text-xs font-mono">Date</th>
+                <th className="px-6 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {rows.map((post) => (
+                <tr key={post.id} className="hover:bg-zinc-800/50 transition-colors">
+                  <td className="px-6 py-4 max-w-xs">
+                    <p className="text-zinc-100 text-sm font-medium truncate">{post.title}</p>
+                    <p className="text-zinc-600 text-xs font-mono mt-0.5">/blog/{post.slug}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {post.tags.slice(0, 3).map((t) => <span key={t} className="text-green-400 text-xs font-mono whitespace-nowrap">{t}</span>)}
+                      {post.tags.length > 3 && <span className="text-zinc-600 text-xs">+{post.tags.length - 3}</span>}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4"><StatusBadge status={post.status} /></td>
+                  <td className="px-6 py-4 text-zinc-500 text-xs font-mono whitespace-nowrap">
+                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : new Date(post.updatedAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4"><BlogActions id={post.id} status={post.status} /></td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800">
-                {rows.map((post) => (
-                  <tr key={post.id} className="hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-6 py-4 max-w-xs">
-                      <p className="text-zinc-100 text-sm font-medium truncate">{post.title}</p>
-                      <p className="text-zinc-600 text-xs font-mono mt-0.5">/blog/{post.slug}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {post.tags.slice(0, 3).map((t) => <span key={t} className="text-green-400 text-xs font-mono whitespace-nowrap">{t}</span>)}
-                        {post.tags.length > 3 && <span className="text-zinc-600 text-xs">+{post.tags.length - 3}</span>}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4"><StatusBadge status={post.status} /></td>
-                    <td className="px-6 py-4 text-zinc-500 text-xs font-mono whitespace-nowrap">
-                      {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : new Date(post.updatedAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4"><BlogActions id={post.id} status={post.status} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <Suspense>
-            <Pagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} />
-          </Suspense>
-        </>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )
