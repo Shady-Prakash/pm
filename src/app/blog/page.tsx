@@ -64,7 +64,7 @@ async function BlogContent({ searchParams }: { searchParams: SearchParams }) {
       ) : (
         <>
           <div className="grid md:grid-cols-2 gap-8">
-            {posts.map((post) => (
+            {posts.map((post, i) => (
               <Link key={post.id} href={`/blog/${post.slug}`} className="group">
                 <article className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 hover:-translate-y-1 transition-all duration-200 h-full flex flex-col">
                   {post.coverImage && (
@@ -76,6 +76,7 @@ async function BlogContent({ searchParams }: { searchParams: SearchParams }) {
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         unoptimized={post.coverImage.endsWith('.gif')}
+                        priority={i === 0}
                       />
                     </div>
                   )}

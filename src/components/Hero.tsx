@@ -43,6 +43,7 @@ export default function Hero() {
                 src="/prakash.jpg"
                 alt="Prakash Mahat"
                 fill
+                sizes="(max-width: 768px) 224px, 288px"
                 className="object-cover"
                 priority
               />

@@ -1,4 +1,3 @@
-import { unstable_cache } from 'next/cache'
 import { prisma } from './prisma'
 
 export const PAGE_SIZE = 5
@@ -43,67 +42,49 @@ function blogOrder(sort: string) {
   }
 }
 
-// ─── cached queries ───────────────────────────────────────────────────────────
+// ─── direct queries (no cache — admin always needs fresh data) ────────────────
 
-export const getAdminProjects = unstable_cache(
-  async (q = '', sort = 'newest', page = 1) => {
-    const where = q ? { title: { contains: q, mode: 'insensitive' as const } } : {}
-    const [rows, total] = await Promise.all([
-      prisma.project.findMany({ where, orderBy: projectsOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-      prisma.project.count({ where }),
-    ])
-    return { rows, total }
-  },
-  ['admin-projects'],
-  { tags: [TAGS.projects, TAGS.stats], revalidate: 60 },
-)
+export async function getAdminProjects(q = '', sort = 'newest', page = 1) {
+  const where = q ? { title: { contains: q, mode: 'insensitive' as const } } : {}
+  const [rows, total] = await Promise.all([
+    prisma.project.findMany({ where, orderBy: projectsOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    prisma.project.count({ where }),
+  ])
+  return { rows, total }
+}
 
-export const getAdminExperiences = unstable_cache(
-  async (q = '', sort = 'newest', page = 1) => {
-    const where = q
-      ? { OR: [{ company: { contains: q, mode: 'insensitive' as const } }, { role: { contains: q, mode: 'insensitive' as const } }] }
-      : {}
-    const [rows, total] = await Promise.all([
-      prisma.experience.findMany({ where, orderBy: experiencesOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-      prisma.experience.count({ where }),
-    ])
-    return { rows, total }
-  },
-  ['admin-experiences'],
-  { tags: [TAGS.experiences, TAGS.stats], revalidate: 60 },
-)
+export async function getAdminExperiences(q = '', sort = 'newest', page = 1) {
+  const where = q
+    ? { OR: [{ company: { contains: q, mode: 'insensitive' as const } }, { role: { contains: q, mode: 'insensitive' as const } }] }
+    : {}
+  const [rows, total] = await Promise.all([
+    prisma.experience.findMany({ where, orderBy: experiencesOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    prisma.experience.count({ where }),
+  ])
+  return { rows, total }
+}
 
-export const getAdminBlog = unstable_cache(
-  async (q = '', sort = 'newest', page = 1) => {
-    const where = q
-      ? { OR: [{ title: { contains: q, mode: 'insensitive' as const } }, { tags: { has: q.toLowerCase() } }] }
-      : {}
-    const [rows, total] = await Promise.all([
-      prisma.blogPost.findMany({ where, orderBy: blogOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
-      prisma.blogPost.count({ where }),
-    ])
-    return { rows, total }
-  },
-  ['admin-blog'],
-  { tags: [TAGS.blog, TAGS.stats], revalidate: 60 },
-)
+export async function getAdminBlog(q = '', sort = 'newest', page = 1) {
+  const where = q
+    ? { OR: [{ title: { contains: q, mode: 'insensitive' as const } }, { tags: { has: q.toLowerCase() } }] }
+    : {}
+  const [rows, total] = await Promise.all([
+    prisma.blogPost.findMany({ where, orderBy: blogOrder(sort), skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
+    prisma.blogPost.count({ where }),
+  ])
+  return { rows, total }
+}
 
-export const getAdminAbout = unstable_cache(
-  async () => prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } }),
-  ['admin-about'],
-  { tags: [TAGS.about], revalidate: 60 },
-)
+export async function getAdminAbout() {
+  return prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
+}
 
-export const getAdminStats = unstable_cache(
-  async () => {
-    const [projects, experiences, blog, about] = await Promise.all([
-      prisma.project.groupBy({ by: ['status'], _count: true }),
-      prisma.experience.groupBy({ by: ['status'], _count: true }),
-      prisma.blogPost.groupBy({ by: ['status'], _count: true }),
-      prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } }),
-    ])
-    return { projects, experiences, blog, about }
-  },
-  ['admin-stats'],
-  { tags: [TAGS.stats, TAGS.projects, TAGS.experiences, TAGS.blog, TAGS.about], revalidate: 60 },
-)
+export async function getAdminStats() {
+  const [projects, experiences, blog, about] = await Promise.all([
+    prisma.project.groupBy({ by: ['status'], _count: true }),
+    prisma.experience.groupBy({ by: ['status'], _count: true }),
+    prisma.blogPost.groupBy({ by: ['status'], _count: true }),
+    prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } }),
+  ])
+  return { projects, experiences, blog, about }
+}
