@@ -1,8 +1,9 @@
 import { marked, Renderer } from 'marked'
 import { codeToHtml } from 'shiki'
 import DOMPurify from 'isomorphic-dompurify'
+import { unstable_cache } from 'next/cache'
 
-export async function renderMarkdown(content: string): Promise<string> {
+async function _renderMarkdown(content: string): Promise<string> {
   const renderer = new Renderer()
   const codeJobs: Promise<string>[] = []
   const markers: string[] = []
@@ -46,6 +47,13 @@ export async function renderMarkdown(content: string): Promise<string> {
     FORCE_BODY: true,
   })
 }
+
+// Keyed by content string — Shiki output is deterministic so cache indefinitely
+export const renderMarkdown = unstable_cache(
+  _renderMarkdown,
+  ['rendered-markdown'],
+  { revalidate: false },
+)
 
 function escapeHtml(str: string): string {
   return str

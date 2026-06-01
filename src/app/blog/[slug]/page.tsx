@@ -1,11 +1,17 @@
-import { getBlogPost } from '@/lib/content'
+import { getBlogPost, getBlogPosts } from '@/lib/content'
 import { renderMarkdown } from '@/lib/markdown'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
-export const dynamic = 'force-dynamic'
+// Pre-render all published posts at build time; revalidate every 5 min
+export const revalidate = 300
+
+export async function generateStaticParams() {
+  const posts = await getBlogPosts()
+  return posts.map((p) => ({ slug: p.slug }))
+}
 
 type Params = { params: Promise<{ slug: string }> }
 
@@ -14,6 +20,7 @@ export default async function BlogPostPage({ params }: Params) {
   const post = await getBlogPost(slug)
   if (!post) notFound()
 
+  // renderMarkdown is unstable_cache'd — Shiki only runs once per unique content
   const htmlContent = await renderMarkdown(post.content)
 
   return (
@@ -56,17 +63,12 @@ export default async function BlogPostPage({ params }: Params) {
               prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
               prose-p:text-zinc-400 prose-p:leading-relaxed
               prose-a:text-green-400 prose-a:no-underline hover:prose-a:underline
-              prose-strong:text-zinc-200
-              prose-em:text-zinc-300
-              prose-li:text-zinc-400
-              prose-ul:list-disc prose-ol:list-decimal
+              prose-strong:text-zinc-200 prose-em:text-zinc-300
+              prose-li:text-zinc-400 prose-ul:list-disc prose-ol:list-decimal
               prose-blockquote:border-l-green-400 prose-blockquote:text-zinc-400 prose-blockquote:italic
-              prose-hr:border-zinc-800
-              prose-table:text-zinc-300
-              prose-thead:border-zinc-700
-              prose-tr:border-zinc-800
-              prose-th:text-zinc-200
-              prose-td:text-zinc-400
+              prose-hr:border-zinc-800 prose-table:text-zinc-300
+              prose-thead:border-zinc-700 prose-tr:border-zinc-800
+              prose-th:text-zinc-200 prose-td:text-zinc-400
               prose-code:text-zinc-200 prose-code:bg-zinc-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none
               [&_.code-block]:my-6
               [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_pre]:!rounded-none

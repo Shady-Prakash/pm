@@ -1,4 +1,4 @@
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://prakashmahat.dev'
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://prakashmahat.com.np'
 export const SITE_NAME = 'Prakash Mahat'
 export const SITE_TITLE = 'Prakash Mahat — Software Engineer in Sydney, Australia'
 export const SITE_DESCRIPTION =
