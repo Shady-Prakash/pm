@@ -15,6 +15,20 @@ export const proxy = auth((req) => {
   if (isLoginPage && isAuthenticated) {
     return NextResponse.redirect(new URL('/admin', req.url))
   }
+
+  // Forward verified session to server components via request headers so the
+  // admin layout doesn't need a second auth() / JWT decode on every page load.
+  const requestHeaders = new Headers(req.headers)
+  // Strip any client-spoofed versions first
+  requestHeaders.delete('x-user-name')
+  requestHeaders.delete('x-user-email')
+  requestHeaders.delete('x-user-image')
+  if (req.auth?.user) {
+    requestHeaders.set('x-user-name', req.auth.user.name ?? '')
+    requestHeaders.set('x-user-email', req.auth.user.email ?? '')
+    requestHeaders.set('x-user-image', req.auth.user.image ?? '')
+  }
+  return NextResponse.next({ request: { headers: requestHeaders } })
 })
 
 export const config = {
