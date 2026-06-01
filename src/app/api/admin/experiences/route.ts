@@ -16,6 +16,11 @@ const schema = z.object({
   order: z.number().int().optional(),
 })
 
+function bustExperiencesCache() {
+  try { revalidateTag(TAGS.experiences, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,9 +46,9 @@ export async function POST(req: NextRequest) {
     const experience = await prisma.experience.create({
       data: { ...rest, scheduledAt: scheduledAt ? new Date(scheduledAt) : null },
     })
-    revalidateTag(TAGS.experiences, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustExperiencesCache()
     return NextResponse.json(experience, { status: 201 })
   } catch {
-    return NextResponse.json({ error: 'Database unavailable. Add your MongoDB connection string to .env.local' }, { status: 503 })
+    return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
   }
 }

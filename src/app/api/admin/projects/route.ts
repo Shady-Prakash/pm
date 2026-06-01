@@ -16,6 +16,11 @@ const schema = z.object({
   order: z.number().int().optional(),
 })
 
+function bustProjectsCache() {
+  try { revalidateTag(TAGS.projects, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -46,9 +51,9 @@ export async function POST(req: NextRequest) {
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       },
     })
-    revalidateTag(TAGS.projects, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustProjectsCache()
     return NextResponse.json(project, { status: 201 })
   } catch {
-    return NextResponse.json({ error: 'Database unavailable. Add your MongoDB connection string to .env.local' }, { status: 503 })
+    return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
   }
 }

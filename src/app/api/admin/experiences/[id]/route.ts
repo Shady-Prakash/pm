@@ -18,6 +18,11 @@ const schema = z.object({
 
 type Params = { params: Promise<{ id: string }> }
 
+function bustExperiencesCache() {
+  try { revalidateTag(TAGS.experiences, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -50,7 +55,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(scheduledAt !== undefined && { scheduledAt: scheduledAt ? new Date(scheduledAt) : null }),
       },
     })
-    revalidateTag(TAGS.experiences, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustExperiencesCache()
     return NextResponse.json(experience)
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
@@ -64,7 +69,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params
     await prisma.experience.delete({ where: { id } })
-    revalidateTag(TAGS.experiences, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustExperiencesCache()
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })

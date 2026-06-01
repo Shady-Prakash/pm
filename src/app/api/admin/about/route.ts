@@ -17,31 +17,43 @@ const schema = z.object({
   scheduledAt: z.string().datetime().optional().nullable(),
 })
 
+function bustAboutCache() {
+  try { revalidateTag(TAGS.about, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const about = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
-  return NextResponse.json(about)
+  try {
+    const about = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
+    return NextResponse.json(about)
+  } catch {
+    return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
+  }
 }
 
 export async function PUT(req: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await req.json()
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+  try {
+    const body = await req.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { scheduledAt, ...rest } = parsed.data
-  const existing = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
+    const { scheduledAt, ...rest } = parsed.data
+    const existing = await prisma.about.findFirst({ orderBy: { updatedAt: 'desc' } })
+    const data = { ...rest, scheduledAt: scheduledAt ? new Date(scheduledAt) : null }
 
-  const data = { ...rest, scheduledAt: scheduledAt ? new Date(scheduledAt) : null }
+    const about = existing
+      ? await prisma.about.update({ where: { id: existing.id }, data })
+      : await prisma.about.create({ data })
 
-  const about = existing
-    ? await prisma.about.update({ where: { id: existing.id }, data })
-    : await prisma.about.create({ data })
-
-  revalidateTag(TAGS.about, 'max'); revalidateTag(TAGS.stats, 'max')
-  return NextResponse.json(about)
+    bustAboutCache()
+    return NextResponse.json(about)
+  } catch {
+    return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
+  }
 }

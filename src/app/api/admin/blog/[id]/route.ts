@@ -18,6 +18,11 @@ const schema = z.object({
 
 type Params = { params: Promise<{ id: string }> }
 
+function bustBlogCache() {
+  try { revalidateTag(TAGS.blog, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET(_req: NextRequest, { params }: Params) {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -55,7 +60,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         ...(status === 'published' && !existing?.publishedAt && { publishedAt: new Date() }),
       },
     })
-    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustBlogCache()
     return NextResponse.json(post)
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })
@@ -69,7 +74,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   try {
     const { id } = await params
     await prisma.blogPost.delete({ where: { id } })
-    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustBlogCache()
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Database unavailable.' }, { status: 503 })

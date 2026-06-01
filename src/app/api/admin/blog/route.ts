@@ -16,6 +16,11 @@ const schema = z.object({
   scheduledAt: z.string().datetime().optional().nullable(),
 })
 
+function bustBlogCache() {
+  try { revalidateTag(TAGS.blog, 'max') } catch {}
+  try { revalidateTag(TAGS.stats, 'max') } catch {}
+}
+
 export async function GET() {
   const session = await auth()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest) {
         publishedAt: rest.status === 'published' ? new Date() : null,
       },
     })
-    revalidateTag(TAGS.blog, 'max'); revalidateTag(TAGS.stats, 'max')
+    bustBlogCache()
     return NextResponse.json(post, { status: 201 })
   } catch (e: unknown) {
     const msg = e instanceof Error && e.message.includes('slug') ? 'A post with this slug already exists.' : 'Database unavailable.'
