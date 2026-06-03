@@ -48,6 +48,7 @@ async function BlogTable({ searchParams }: { searchParams: SearchParams }) {
             </thead>
             <tbody className="divide-y divide-zinc-800">
               {rows.map((post) => (
+                console.log(post),
                 <tr key={post.id} className="hover:bg-zinc-800/50 transition-colors">
                   <td className="px-6 py-4 max-w-xs">
                     <p className="text-zinc-100 text-sm font-medium truncate">{post.title}</p>
