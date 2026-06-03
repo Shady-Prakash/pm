@@ -19,8 +19,7 @@ const schema = z.object({
 type Params = { params: Promise<{ id: string }> }
 
 function bustBlogCache() {
-  try { revalidateTag(TAGS.blog, 'max') } catch {}
-  try { revalidateTag(TAGS.stats, 'max') } catch {}
+  revalidateTag(TAGS.blog, { expire: 0 })
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {

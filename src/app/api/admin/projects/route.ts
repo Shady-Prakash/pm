@@ -17,8 +17,7 @@ const schema = z.object({
 })
 
 function bustProjectsCache() {
-  try { revalidateTag(TAGS.projects, 'max') } catch {}
-  try { revalidateTag(TAGS.stats, 'max') } catch {}
+  revalidateTag(TAGS.projects, { expire: 0 })
 }
 
 export async function GET() {
