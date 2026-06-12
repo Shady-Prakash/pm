@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import ShareButtons from '@/components/ShareButtons'
+import { SITE_URL } from '@/lib/seo'
 
 // Pre-render all published posts at build time; revalidate every 5 min
 export const revalidate = 300
@@ -78,6 +80,10 @@ export default async function BlogPostPage({ params }: Params) {
         </article>
 
         <div className="mt-16 pt-8 border-t border-zinc-800">
+          <ShareButtons url={`${SITE_URL}/blog/${post.slug}`} title={post.title} />
+        </div>
+
+        <div className="mt-8">
           <Link href="/blog" className="text-zinc-500 hover:text-green-400 font-mono text-sm transition-colors">
             ← Back to all articles
           </Link>

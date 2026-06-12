@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
-      { protocol: 'https', hostname: 'cdn-images-1.medium.com' },
-      { protocol: 'https', hostname: 'miro.medium.com' },
-    ],
+    // Blog cover images are arbitrary URLs pasted in the admin (no fixed CDN),
+    // so allow any HTTPS host instead of maintaining a per-host allowlist.
+    // The optimizer only optimizes — it never forwards auth headers. Narrow
+    // this back to specific hostnames if cover sources ever become fixed.
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
 };
 
