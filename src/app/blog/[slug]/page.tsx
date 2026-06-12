@@ -2,10 +2,11 @@ import { getBlogPost, getBlogPosts } from '@/lib/content'
 import { renderMarkdown } from '@/lib/markdown'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ShareButtons from '@/components/ShareButtons'
-import { SITE_URL } from '@/lib/seo'
+import { SITE_URL, SITE_NAME } from '@/lib/seo'
 
 // Pre-render all published posts at build time; revalidate every 5 min
 export const revalidate = 300
@@ -16,6 +17,46 @@ export async function generateStaticParams() {
 }
 
 type Params = { params: Promise<{ slug: string }> }
+
+// Resolve a cover image (full URL or site-relative path) to an absolute URL,
+// falling back to the site avatar so shares always have an image.
+function resolveImage(coverImage: string | null): string {
+  if (!coverImage) return `${SITE_URL}/prakash.jpg`
+  if (/^https?:\/\//i.test(coverImage)) return coverImage
+  return `${SITE_URL}${coverImage.startsWith('/') ? '' : '/'}${coverImage}`
+}
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params
+  const post = await getBlogPost(slug)
+  if (!post) return {}
+
+  const url = `${SITE_URL}/blog/${post.slug}`
+  const description = post.excerpt
+  const image = resolveImage(post.coverImage)
+
+  return {
+    title: post.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'article',
+      title: post.title,
+      description,
+      url,
+      siteName: SITE_NAME,
+      images: [{ url: image, alt: post.title }],
+      publishedTime: (post.publishedAt ?? post.createdAt).toISOString(),
+      tags: post.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+      images: [image],
+    },
+  }
+}
 
 export default async function BlogPostPage({ params }: Params) {
   const { slug } = await params
