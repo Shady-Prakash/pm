@@ -21,7 +21,7 @@ export default async function AdminAboutPage() {
               }
             : {
                 bio: [
-                  "I'm a Software Engineer with 4+ years of experience building dynamic, responsive, and scalable web applications — and an AI/ML enthusiast currently deep-diving into automation and Python.",
+                  "I'm a Software Engineer with 5+ years of experience building dynamic, responsive, and scalable web applications — and an AI/ML enthusiast currently deep-diving into automation and Python.",
                   "I've worked across startups and agencies — from building multi-portal enterprise systems at Gurzu Inc to delivering Dishoom University's web platform and shipping a full-stack MVP at Fitch Ratings in 72 hours.",
                   "Pursuing a Master of IT in Artificial Intelligence at Macquarie University, Sydney. I'm passionate about exploring how AI and automation can reshape the way we build software.",
                 ],
