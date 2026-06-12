@@ -1,7 +1,32 @@
 import { marked, Renderer } from 'marked'
 import { codeToHtml } from 'shiki'
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtml from 'sanitize-html'
 import { unstable_cache } from 'next/cache'
+
+// Allowlist tuned to preserve marked output + Shiki's <pre>/<span style="color:…">
+// code blocks. sanitize-html is pure JS (no jsdom), so it runs on Vercel's
+// serverless runtime — unlike isomorphic-dompurify, which crashed there.
+const SANITIZE_OPTS: sanitizeHtml.IOptions = {
+  allowedTags: [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'ul', 'ol', 'li',
+    'blockquote', 'code', 'pre', 'span', 'div', 'strong', 'em', 'b', 'i',
+    'del', 's', 'hr', 'br', 'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    'figure', 'figcaption',
+  ],
+  allowedAttributes: {
+    '*': ['class', 'style', 'tabindex'],
+    a: ['href', 'name', 'target', 'rel'],
+    img: ['src', 'alt', 'title'],
+  },
+  // Shiki emits inline `color` / `background-color`; keep those, drop the rest.
+  allowedStyles: {
+    '*': {
+      color: [/.*/],
+      'background-color': [/.*/],
+      background: [/.*/],
+    },
+  },
+}
 
 async function _renderMarkdown(content: string): Promise<string> {
   const renderer = new Renderer()
@@ -42,10 +67,7 @@ async function _renderMarkdown(content: string): Promise<string> {
     html = html.replace(m, resolved[i])
   })
 
-  return DOMPurify.sanitize(html, {
-    ADD_ATTR: ['style', 'class', 'tabindex'],
-    FORCE_BODY: true,
-  })
+  return sanitizeHtml(html, SANITIZE_OPTS)
 }
 
 // Keyed by content string — Shiki output is deterministic so cache indefinitely
